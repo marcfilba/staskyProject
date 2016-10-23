@@ -134,63 +134,62 @@ class LinksProviderPordede(LinksProvider):
             pass
 
     def getChapterUrls (self, serieUrl, seasonNumber, chapterNumber, q):
-        #print '  -> Searching in ' + str (self._name) + '...'
+        try:
+            #print '  -> Searching in ' + str (self._name) + '...'
+            r = requests.post (self._URL + 'site/login',  \
+                headers = {'Accept' : '*/*', \
+                         'Accept-Encoding' : 'gzip, deflate', \
+                         'Connection' : 'keep-alive', \
+                         'Content-Length' : '104', \
+                         'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8', \
+                         'Host' : 'www.pordede.com', \
+                         'Referer' : 'http://www.pordede.com/', \
+                         'User-Agent' : 'Mozilla/5.0' },  \
+                data = {'LoginForm[username]': 'gunkyProject', \
+                         'LoginForm[password]': '123456', \
+                         'popup' : '1', \
+                        'sesscheck' : 'ne09kk9c0ua7mgdjmcn6qs9fq1'})
 
-        r = requests.post (self._URL + 'site/login',  \
-            headers = {'Accept' : '*/*', \
-                     'Accept-Encoding' : 'gzip, deflate', \
-                     'Connection' : 'keep-alive', \
-                     'Content-Length' : '104', \
-                     'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8', \
-                     'Host' : 'www.pordede.com', \
-                     'Referer' : 'http://www.pordede.com/', \
-                     'User-Agent' : 'Mozilla/5.0' },  \
-            data = {'LoginForm[username]': 'gunkyProject', \
-                     'LoginForm[password]': '123456', \
-                     'popup' : '1', \
-                     'sesscheck' : 'ne09kk9c0ua7mgdjmcn6qs9fq1'})
+            cookies = r.cookies
+            r = requests.get (serieUrl, cookies = cookies)
 
-        cookies = r.cookies
-        r = requests.get (serieUrl, cookies = cookies)
+            _parser = Parser ()
+            data = _parser.feed (r.text)
 
-        _parser = Parser ()
-        data = _parser.feed (r.text)
+            seasons = data.get_by (clazz = 'episodes')
 
-        seasons = data.get_by (clazz = 'episodes')
+            linkToChapter = ''
+            for s in seasons:
+                if 'episodes-' + str(seasonNumber) in s.attrs['id'][0]:
+                    chapters = s.get_by (clazz = 'info')
+                    for c in chapters:
+                        for n in c.get_by (clazz = 'number'):
+                            if n.attrs['data'][0] in str(chapterNumber):
+                                linkToChapter = self._URL[:-1] + c.get_childs()[0].attrs['href'][0]
 
-        linkToChapter = ''
-        for s in seasons:
-            if 'episodes-' + str(seasonNumber) in s.attrs['id'][0]:
-                chapters = s.get_by (clazz = 'info')
-                for c in chapters:
-                    for n in c.get_by (clazz = 'number'):
-                        if n.attrs['data'][0] in str(chapterNumber):
-                            linkToChapter = self._URL[:-1] + c.get_childs()[0].attrs['href'][0]
+            r = requests.get (linkToChapter, cookies = cookies)
 
+            data = _parser.feed (r.text.encode('utf-8'))
 
-        r = requests.get (linkToChapter, cookies = cookies)
+            onlineLinks = data.get_by (clazz = 'linksPopup')[0].get_childs()[4]
+            chapterLinks = onlineLinks.get_by (clazz = 'a aporteLink done')
 
-        data = _parser.feed (r.text.encode('utf-8'))
+            i = 0
 
-        onlineLinks = data.get_by (clazz = 'linksPopup')[0].get_childs()[4]
-        chapterLinks = onlineLinks.get_by (clazz = 'a aporteLink done')
+            numThreads = len (chapterLinks) // 4
 
-        i = 0
+            while (i < len (chapterLinks)):
 
-        numThreads = len (chapterLinks) // 4
+                threads = []
+    
+                for j in range (0, numThreads):
+                    if i >= len (chapterLinks):
+                        break
 
-        while (i < len (chapterLinks)):
+                    threads.append (Thread (target=self.getLinkInfo, args= (chapterLinks[i], cookies, q)))
+                    i += 1
 
-            threads = []
-
-            for j in range (0, numThreads):
-                if i >= len (chapterLinks):
-                    break
-
-                threads.append (Thread (target=self.getLinkInfo, args= (chapterLinks[i], cookies, q)))
-                i += 1
-
-            for thread in threads: thread.start()
-            for thread in threads: thread.join (5)
-
-        #print '  -> Search finished in ' + str (self._name) + '...'
+                for thread in threads: thread.start()
+                for thread in threads: thread.join (5)
+        except:
+            pass
