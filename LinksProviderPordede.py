@@ -24,8 +24,8 @@ class LinksProviderPordede(LinksProvider):
 
         if serieName.lower() == 'daredevil':
             serieName = "marvel's daredevil"
-	elif serieName.lower() =='gambling apocalypse kaiji':
-	    serieName = 'kaiji'
+        elif serieName.lower() =='gambling apocalypse kaiji':
+            serieName = 'kaiji'
 
         url = self._URL + 'site/login'
 
@@ -68,7 +68,8 @@ class LinksProviderPordede(LinksProvider):
                 if tries == 0:
                     driver.quit()
                     display.stop()
-                    raise Exception ('  -> Can\'t enter to SeriesPordede')
+                    return
+                    #raise Exception ('  -> Can\'t enter to SeriesPordede')
 
         tries = 5
         found = False
@@ -86,7 +87,8 @@ class LinksProviderPordede(LinksProvider):
                 if tries == 0:
                     driver.quit()
                     display.stop()
-                    raise Exception ('  -> Serie not found in SeriesPordede')
+                    return
+                    #raise Exception ('  -> Serie not found in SeriesPordede')
 
     def getLinkInfo (self, chapterLink, cookies, q):
         childs = chapterLink.get_childs()[0].get_childs()

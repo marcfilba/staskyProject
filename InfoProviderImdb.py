@@ -27,7 +27,6 @@ class InfoProviderImdb (InfoProvider):
             data += r.text + ', '
             season += 1
             r = requests.get(self._imdbAPIurl + 'i=tt' + imdbID + '&Season=' + str (season))
-
         return data [:-2] + ']'
 
     def loadSerie (self, serieName):
@@ -46,10 +45,6 @@ class InfoProviderImdb (InfoProvider):
 
     def getSuggerencies (self):
         return self._suggerencies
-
-    def printSuggerencies (self):
-        for sugg in self._suggerencies:
-            print '   -> ' + sugg
 
 #imdb = InfoProviderImdb ()
 #print imdb.loadSerie ('bones')

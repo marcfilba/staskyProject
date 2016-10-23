@@ -39,7 +39,8 @@ class LinksProviderSeriesFlv(LinksProvider):
         if 'is currently offline' in html:
             driver.quit()
             display.stop()
-            raise Exception (' -> web SeriesFlv offline')
+            #raise Exception (' -> web SeriesFlv offline')
+            return
 
         _parser = Parser ()
         data = _parser.feed (html)
@@ -47,7 +48,8 @@ class LinksProviderSeriesFlv(LinksProvider):
         if len (data.get_by (tag = 'a')) < 1:
             driver.quit()
             display.stop()
-            raise Exception ('  -> serie "' + serieName + '" not found in SeriesFlv')
+            #raise Exception ('  -> serie "' + serieName + '" not found in SeriesFlv')
+            return
 
         driver.quit()
         display.stop()

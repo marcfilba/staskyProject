@@ -24,7 +24,6 @@ class CtrlDisk ():
         if not os.path.exists (self.seriePath + toPath):
             os.makedirs (self.seriePath + toPath)
 
-        print self.tmpPath + fromPath
         os.chmod (self.tmpPath + fromPath, 0755)
         shutil.move (self.tmpPath + fromPath, self.seriePath + toPath)
 

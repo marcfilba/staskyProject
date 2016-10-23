@@ -24,7 +24,7 @@ class LinksProviderSeriesAdicto(LinksProvider):
         r = requests.get (url, headers={ "user-agent": "Mozilla/5.0" })
 
         if r.status_code != 200:
-            raise Exception ('  -> error getting serie from SeriesAdicto')
+            #raise Exception ('  -> error getting serie from SeriesAdicto')
             return
 
         _parser = Parser ()
@@ -32,7 +32,8 @@ class LinksProviderSeriesAdicto(LinksProvider):
 
         clazz = data.get_by (clazz = 'col-xs-6 col-sm-4 col-md-2')
         if len (clazz) == 0:
-            raise Exception ('  -> serie "' + serieName + '" not found in SeriesAdicto')
+            #raise Exception ('  -> serie "' + serieName + '" not found in SeriesAdicto')
+            return
 
         q.put((self._name, self._URL[:-1] + str(clazz[0].get_childs()[0].attrs['href'][0])))
 
@@ -42,7 +43,7 @@ class LinksProviderSeriesAdicto(LinksProvider):
         r = requests.get (serieUrl, headers={ "user-agent": "Mozilla/5.0" })
 
         if r.status_code != 200:
-            raise Exception ('  -> error getting serie from SeriesAdicto')
+            #raise Exception ('  -> error getting serie from SeriesAdicto')
             return
 
         _parser = Parser ()

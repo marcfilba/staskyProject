@@ -13,6 +13,7 @@ class Serie ():
 		self._description = ''
 		self._mainPageLinks = []
 		self._seasons = []
+		self._keyNames = []
 		self._languages = {"languages" : ["Spanish", "English"], "subtitles" : ["", "Spanish"]}
 		self._substitles = ['', 'Spanish']
 		self._imdb = imdb.IMDb()
@@ -32,11 +33,20 @@ class Serie ():
 	def getSeason (self, i):
 		return self._seasons [i]
 
+	def getKeyNames (self):
+		return self._keyNames
+
 	def getChapter (self, season, chapterNumber):
 		return self._seasons [season] [chapterNumber]
 
 	def getLanguages (self):
 		return self._languages
+
+	def setKeyNames (self, keyNames):
+		self._keyNames = keyNames
+
+	def addKeyName (self, keyName):
+		self._keyNames.append (keyName)
 
 	def setLanguages (self, languages):
 		self._languages = languages
@@ -71,6 +81,7 @@ class Serie ():
 		serieJson = json.loads(serieData)
 
 		self._name = serieJson ['serie']['Title']
+		self._keyNames.append (self._name.lower ())
 		self._description = serieJson ['serie']['Plot']
 
 		season = 0
@@ -139,7 +150,7 @@ class Serie ():
 		print ''
 		print ' -> name: ' + self._name
 		print ' -> description: ' + self._description
-		print ' -> links [' + str(len(self._mainPageLinks [0])) + ']'
+		print ' -> links [' + str(len(self._mainPageLinks)) + ']'
 		for l in self._mainPageLinks:
 			print '   -> (' + str(l [0]) + ')  \'' + str(l [1]) + '\''
 		print ' -> seasons [' + str(len(self._seasons)) + ']'

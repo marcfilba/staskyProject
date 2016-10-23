@@ -13,20 +13,20 @@ class DownloadStreamin (Download):
                 return line.split ('\'')[1]
 
     def waitForLink (self, elem):
-        print '  -> waiting for the page load'
+        #print '  -> waiting for the page load'
         while 'disabled' in elem.get_attribute('innerHTML'):
-            time.sleep(1)
+            time.sleep (1)
 
     def downloadVideo (self, link, name):
 
-        display = Display(visible=0, size=(800, 600))
+        display = Display(visible = 0, size = (800, 600))
         display.start()
 
         driver = webdriver.Chrome()
         driver.set_page_load_timeout(60)
 
         try:
-            print '  -> going to ' + link
+            #print '  -> going to ' + link
 
             driver.get(link)
             time.sleep (5)

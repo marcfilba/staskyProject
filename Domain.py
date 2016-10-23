@@ -7,29 +7,75 @@ from CtrlProviders import CtrlProviders
 from Serie import Serie
 
 from Tools import readInt, isNumber
+
 from sys import exit, stdout
 from random import randint
+from threading import Thread
+from time import sleep
 
 class Domain ():
 
     def __init__ (self):
         self._ctrlDatabase = CtrlDatabase ()
-        self._ctrlDisk = CtrlDisk(self._ctrlDatabase.getSeriePath (), self._ctrlDatabase.getTmpPath ())
+        self._ctrlDisk = CtrlDisk (self._ctrlDatabase.getSeriePath (), self._ctrlDatabase.getTmpPath ())
         self._ctrlProviders = CtrlProviders (self._ctrlDatabase.getTmpPath())
 
+        self._ctrlDatabase.markDownloadQueueAsPending ()
+        self._seriesPending = []
+
+    def _deleteSeriePending (self, serieName):
+        for i, s in enumerate (self._seriesPending):
+            if s == serieName.lower ():
+                self._seriesPending.pop (i)
+
+    def _addSeriePending (self, serieName):
+        self._seriesPending.append (serieName.lower ())
+
+    def _isSeriePending (self, serieName):
+        for i, s in enumerate (self._seriesPending):
+            if s == serieName.lower ():
+                return True
+        return False
+
+    def updateExistingSerie (self, serie):
+
+        serie.setSeasons ([])
+        serieMainPages = []
+        for keyName in serie.getKeyNames ():
+            if len (serie.getSeasons ()) == 0:
+                sDataTmp = self._ctrlProviders.loadSerie (keyName)
+                sTmp = Serie ()
+                sTmp.loadSerie (sDataTmp)
+                serie.setSeasons (sTmp.getSeasons ())
+
+            if len (serieMainPages) == 0:
+                serieMainPages = self._ctrlProviders.getMainInfo (keyName)
+
+        serie.setMainPageLinks (serieMainPages)
+
+        self._ctrlDatabase.storeSerie (serie)
+
     def _updateSerie (self, serieName):
-        print ''
-        print '  -> finding serie "' + serieName + '"'
-
-        serieData = self._ctrlProviders.loadSerie (serieName.lower())
+        serieNameOk = serieName.lower ()
+        serieData = self._ctrlProviders.loadSerie (serieNameOk)
         if serieData == None:
-            raise Exception ('  -> serie "' + serieName + '" not found')
-            self._ctrlProviders.printSuggerencies ()
-
-        serieMainPages = self._ctrlProviders.getMainInfo (serieName.lower())
+            sugg = self._ctrlProviders.getSuggerencies ()
+            if len (sugg) > 0:
+                serieNameOk =  sugg [0].lower ()
+                serieData = self._ctrlProviders.loadSerie (serieNameOk)
+                if serieData == None:
+                    raise Exception ('  -> serie "' + serieName + '" not found')
 
         serie = Serie ()
         serie.loadSerie (serieData)
+        if serieNameOk != serieName.lower ():
+            serie.addKeyName (serieName.lower ())
+
+        serieMainPages = []
+        for keyName in serie.getKeyNames ():
+            if len (serieMainPages) == 0:
+                serieMainPages = self._ctrlProviders.getMainInfo (keyName)
+
         serie.setMainPageLinks (serieMainPages)
 
         self._ctrlDatabase.storeSerie (serie)
@@ -41,24 +87,11 @@ class Domain ():
         if self._ctrlDatabase.serieInDb (serieName):
             serie = self._ctrlDatabase.getSerie (serieName)
         else:
+            self._addSeriePending (serieName)
             serie = self._updateSerie (serieName)
+
+        self._deleteSeriePending (serieName)
         return serie
-
-    def viewSerie (self, serieName):
-        serie = Serie ()
-        try:
-            serie = self._getSerie (serieName)
-        except Exception as e:
-            print str (e)
-            print '  -> serie "' + serieName + '" not found'
-            self._ctrlProviders.printSuggerencies ()
-            return
-
-        serie.printSerie ()
-
-    def updateSerie (self, serieName):
-        self._updateSerie (serieName)
-        print '  -> serie "' + serieName + '" updated successfully'
 
     def _selectChapter (self, links, languages):
         it = 0
@@ -82,8 +115,6 @@ class Domain ():
                 rand = randint (0, len(possibleLinks)-1)
                 for j, l in enumerate(links):
                     if l.getURL () in possibleLinks [rand].getURL ():
-                        print ''
-                        print '  -> link #' + str( j + 1 ) + ' automatically selected'
                         return possibleLinks [rand]
 
     			return links [read - 1]
@@ -101,24 +132,38 @@ class Domain ():
 
         return name.replace('\\', '-').replace('?','').replace('!','') + '.mp4'
 
+    def getPlexServerName (self):
+        return self._ctrlDatabase.getPlexServerName ()
+
+    def getPlexUsername (self):
+        return self._ctrlDatabase.getPlexUsername ()
+
+    def getPlexPassword (self):
+        return self._ctrlDatabase.getPlexPassword ()
+
     def downloadChapter (self, serieName, seasonNumber, chapterNumber):
         serie = Serie ()
         try:
-			serie = self._getSerie (serieName)
+            serie = self._getSerie (serieName)
         except Exception as e:
-            print '  -> serie "' + serieName + '" not found'
-            self._ctrlProviders.printSuggerencies ()
+            self._deleteSeriePending (serieName)
+            self.log (serieName, seasonNumber, chapterNumber, 'serie not found')
             return
 
         if serie.seasonExists (seasonNumber):
             if serie.chapterNumberExists (seasonNumber, chapterNumber):
-                print ''
-                serie.printChapter (seasonNumber, chapterNumber)
+
+                if len (serie.getMainPageLinks ()) == 0:
+                    self.updateExistingSerie (serie)
+                    if len (serie.getMainPageLinks ()) == 0:
+                        self.log (serieName, seasonNumber, chapterNumber, 'no mainPageLink found')
+                        raise Exception ('error, no mainPageLink found')
+
 
                 if len (serie.getSeasons ()[seasonNumber-1].getChapters ()[chapterNumber-1].getLinkArray ()) == 0:
                     chapterUrls = self._ctrlProviders.getChapterUrls(serie.getMainPageLinks (), seasonNumber, chapterNumber, serie.getLanguages ())
                     if isNumber (chapterUrls):
-                        print '  -> error, can\'t retrieve the chapter (Error ' + str(chapterUrls) + ')'
+                        self.log (serieName, seasonNumber, chapterNumber, 'can\'t retrieve the chapter (Error ' + str(chapterUrls) + ')')
                         raise Exception ('error, can\'t retrieve the chapter')
                     serie.getSeasons ()[seasonNumber-1].getChapters ()[chapterNumber-1].appendLinkArray (chapterUrls)
                     self._ctrlDatabase.storeSerie (serie)
@@ -126,37 +171,35 @@ class Domain ():
                 chapterUrls = serie.getSeasons ()[seasonNumber-1].getChapters ()[chapterNumber-1].getLinkArray ()
 
                 if len(chapterUrls) > 0:
-                    print ''
                     downloadErr = True
 
-                    for i, l in enumerate(chapterUrls):
-                        stdout.write('   -> #' + str( i + 1 ) + ' - ')
-                        l.printLink ()
-
+                    self.log (serieName, seasonNumber, chapterNumber, str (len (chapterUrls)) + ' links found, starting download')
                     while downloadErr:
                         selectedChapter = self._selectChapter (chapterUrls, serie.getLanguages ())
                         if selectedChapter == None:
-                            print '  -> no links for download found'
-                            return
+                            self.log (serieName, seasonNumber, chapterNumber, 'no links for download found')
+                            return -2
                         name = self._buildName (serie, seasonNumber, chapterNumber, selectedChapter.getLanguage(), selectedChapter.getSubtitles())
 
                         try:
                             self._ctrlProviders.downloadVideo (selectedChapter.getURL (), selectedChapter.getHost (), name)
+                            self.log (serieName, seasonNumber, chapterNumber, 'downloaded successfull')
                             serie.getSeasons ()[seasonNumber-1].getChapters ()[chapterNumber-1].setLinkArray ([])
                             downloadErr = False
 
                             try:
                                 self._ctrlDisk.moveFile (name, serie.getName ())
+                                self.log (serieName, seasonNumber, chapterNumber, 'moved to serie folder')
+                                return 0
                             except Exception as e:
-                                print '  -> error moving chapter, move manually from the tmpPath folder (' + str (e) + ')'
+                                self.log (serieName, seasonNumber, chapterNumber, 'error moving chapter, move manually from the tmpPath folder (' + str (e) + ')')
+                                return -1
 
                         except Exception as e:
-                            print '  -> error downloading chapter "' + name
                             iterator = 0
                             deleted = False
                             while iterator < len (chapterUrls) and not deleted:
                                 if selectedChapter.getURL () is chapterUrls [iterator].getURL ():
-                                    print '  -> link deleted'
                                     chapterUrls.pop (iterator)
                                     serie.getSeasons ()[seasonNumber-1].getChapters ()[chapterNumber-1].setLinkArray (chapterUrls)
                                     self._ctrlDatabase.storeSerie (serie)
@@ -164,66 +207,41 @@ class Domain ():
                                 iterator += 1
 
             else:
-				print ''
-				print ' -> chapter number ' + str(chapterNumber) + ' doesn\'t exist'
+                self.log (serieName, seasonNumber, chapterNumber, 'chapter number doesn\'t exist')
+                return -3
         else:
-			print ''
-			print ' -> season number ' + str(seasonNumber) + ' doesn\'t exist'
-        print ''
+            self.log (serieName, seasonNumber, chapterNumber, 'season number doesn\'t exist')
+            return -4
 
-    def downloadNext (self, serieName):
-        serie = Serie ()
+    def addToDownloadQueue (self, serieName, seasonNumber, chapterNumber):
+        if not self._ctrlDatabase.inDownloadQueue (serieName.lower (), seasonNumber, chapterNumber):
+            self._ctrlDatabase.addToDownloadQueue (serieName.lower (), seasonNumber, chapterNumber)
+
+
+    def log (self, serieName, seasonNumber, chapterNumber, dataToLog):
+        self._ctrlDatabase.log (serieName, seasonNumber, chapterNumber, dataToLog)
+
+    def simpleLog (self, serieName, dataToLog):
+        self._ctrlDatabase.log (serieName, dataToLog)
+
+    def processSingleDownload (self, serieName, seasonNumber, chapterNumber):
+        if self._isSeriePending (serieName):
+            self.log (serieName + ' ' + seasonNumber + 'x' + chapterNumber, 'waiting for serie data')
+            while self._isSeriePending (serieName):
+                sleep (3)
+
+            self.log (serieName + ' ' + seasonNumber + 'x' + chapterNumber, 'resuming')
+
         try:
-            serie = self._getSerie (serieName)
-        except Exception as e:
-            print ' -> serie "' + serieName + '" not found'
-            return
+            self.downloadChapter (serieName.lower (), int (seasonNumber), int (chapterNumber))
+        except:
+            pass
 
-        if serie == None:
-            return
+    def getPendingQueue (self):
+        return self._ctrlDatabase.getPendingQueue ()
 
-        lastChapter = self._ctrlDisk.getLastChapter( serie.getName ())
-        if lastChapter == None:
-            self.downloadChapter (serieName, 1, 1)
-        else:
-            seasonNumber = int (lastChapter [0:2])
-            chapterNumber = int (lastChapter [3:5])
+    def downloadedFromDownloadQueue (self, serieName, seasonNumber, chapterNumber):
+        self._ctrlDatabase.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
 
-            if serie.chapterNumberExists (seasonNumber, chapterNumber + 1):
-                self.downloadChapter (serieName, seasonNumber, chapterNumber + 1)
-            else:
-                if serie.seasonExists (seasonNumber + 1):
-                    if serie.chapterNumberExists (seasonNumber + 1, 1):
-                        self.downloadChapter (serieName, seasonNumber + 1, 1)
-                    else:
-                        print ' -> chapter 0' + str(seasonNumber + 1) + 'x01 unavailable'
-                else:
-                    numStr = ''
-                    if chapterNumber + 1< 10:
-                        numStr += '0'
-                    numStr += str(chapterNumber + 1)
-
-                    print ' -> chapter 0' + str(seasonNumber) + 'x' + numStr + ' unavailable'
-
-
-    def downloadSeason (self, serieName, seasonNumber):
-        serie = Serie ()
-        try:
-            serie = self._getSerie (serieName)
-        except Exception as e:
-            print ' -> serie "' + serieName + '" not found'
-            return
-
-            if serie == None:
-                return
-
-        lastChapter = self._ctrlDisk.getLastChapterBySeason( serie.getName (), seasonNumber)
-        chapterNumber = lastChapter + 1
-
-        if serie.seasonExists (seasonNumber):
-            while chapterNumber <= len (serie.getSeasons () [seasonNumber -1].getChapters ()):
-                self.downloadChapter (serieName, seasonNumber, chapterNumber)
-                chapterNumber += 1
-        print ''
-        print '  -> season ' + str (seasonNumber) + ' download successful'
-        print ''
+    def markItemAsNotPending (self, serieName, seasonNumber, chapterNumber):
+        self._ctrlDatabase.markItemAsNotPending (serieName, seasonNumber, chapterNumber)

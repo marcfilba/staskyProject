@@ -20,20 +20,20 @@ class DownloadStreamPlay (Download):
                 return 'http://' + ip + '/' + hash + '/v.' + format
 
     def waitForLink (self, elem):
-        print '  -> waiting for the page load'
+        #print '  -> waiting for the page load'
         while elem.get_attribute('disabled') == 'true':
             time.sleep(1)
 
     def downloadVideo (self, link, name):
 
-        display = Display(visible=0, size=(800, 600))
+        display = Display (visible = 0, size = (800, 600))
         display.start()
 
         driver = webdriver.Chrome()
         driver.set_page_load_timeout(60)
 
         try:
-            print '  -> going to ' + link
+            #print '  -> going to ' + link
 
             driver.get(link)
             elem = driver.find_element_by_id ('btn_download')

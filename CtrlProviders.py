@@ -35,7 +35,6 @@ class CtrlProviders():
         if 'streamcloud' in host.lower():
             d = DownloadStreamCloud ()
             downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
-
         elif 'nowvideo' in host.lower():
             d = DownloadNowVideo ()
             downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
@@ -45,24 +44,18 @@ class CtrlProviders():
         elif 'streamin' in host.lower() or 'streaminto' in host.lower():
             d =  DownloadStreamin ()
             downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
-        else:
-            print '  -> host "' + host + '" not defined for download'
 
     def loadSerie (self, serieName):
         data = self._infoProviderImdb.loadSerie (serieName)
-        if data == None:
+        #if data == None:
 			#data = self._infoProviderAnime.loadSerie (serieName)
 			#if data == None:
 				#...
-            raise Exception ('Serie "' + serieName + '" not found')
+            #raise Exception ('Serie "' + serieName + '" not found')
         return data
 
-    def printSuggerencies (self):
-        print ''
-        print ' -> suggerencies:'
-        self._infoProviderImdb.printSuggerencies ()
-        #self._infoProviderAnime.printSuggerencies ()
-        print ''
+    def getSuggerencies (self):
+        return self._infoProviderImdb.getSuggerencies ()
 
     def getMainInfo (self, serieName):
         q = Queue()
@@ -86,7 +79,6 @@ class CtrlProviders():
         q = Queue()
 
         threads = []
-        print ''
         for mainPage, linkProvider in [(x[1], y) for x in mainPagesLinks for y in self._linkProviders if x[0] == y._name]:
             threads.append(Thread(target=linkProvider.getChapterUrls, args=(mainPage, seasonNumber, chapterNumber, q)))
 

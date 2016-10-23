@@ -52,8 +52,8 @@ class LinksProviderSeriesPepito(LinksProvider):
                 if tries == 0:
                     driver.quit()
                     display.stop()
-                    return
                     #raise Exception ('  -> Serie not found in SeriesPepito')
+                    return
 
     def getChapterUrls (self, serieUrl, seasonNumber, chapterNumber, q):
         #print '  -> Searching chapters in ' + str (self._name) + '...'
@@ -61,7 +61,8 @@ class LinksProviderSeriesPepito(LinksProvider):
         r = requests.get (serieUrl, headers={ "user-agent": "Mozilla/5.0" })
 
         if r.status_code != 200:
-            raise Exception ('  -> error getting serie from SeriesPepito')
+            #raise Exception ('  -> error getting serie from SeriesPepito')
+            return
 
         _parser = Parser ()
         data = _parser.feed (r.text)
