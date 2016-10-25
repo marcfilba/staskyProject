@@ -23,6 +23,7 @@ class CtrlDisk ():
     def moveFile (self, fromPath, toPath):
         if not os.path.exists (self.seriePath + toPath):
             os.makedirs (self.seriePath + toPath)
+            os.chmod (self.seriePath + toPath, 0755)
 
         os.chmod (self.tmpPath + fromPath, 0755)
         shutil.move (self.tmpPath + fromPath, self.seriePath + toPath)

@@ -218,12 +218,11 @@ class Domain ():
         if not self._ctrlDatabase.inDownloadQueue (serieName.lower (), seasonNumber, chapterNumber):
             self._ctrlDatabase.addToDownloadQueue (serieName.lower (), seasonNumber, chapterNumber)
 
-
     def log (self, serieName, seasonNumber, chapterNumber, dataToLog):
         self._ctrlDatabase.log (serieName, seasonNumber, chapterNumber, dataToLog)
 
     def simpleLog (self, serieName, dataToLog):
-        self._ctrlDatabase.log (serieName, dataToLog)
+        self._ctrlDatabase.simpleLog (serieName, dataToLog)
 
     def processSingleDownload (self, serieName, seasonNumber, chapterNumber):
         if self._isSeriePending (serieName):
@@ -235,7 +234,8 @@ class Domain ():
 
         try:
             self.downloadChapter (serieName.lower (), int (seasonNumber), int (chapterNumber))
-        except:
+        except Exception as e:
+            #self.simpleLog (serieName, str(seasonNumber) + 'x' + str(chapterNumber) + ' error downloading chapter (domain) (' + str (e) + ')')
             pass
 
     def getPendingQueue (self):

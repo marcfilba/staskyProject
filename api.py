@@ -46,29 +46,73 @@ def addSerieToDownloadQueue():
 
 
 def downloadNext (serie, seasonNumber, chapterNumber):
-    if serie.chapterNumberExists (seasonNumber, chapterNumber + 1):
-        d.addToDownloadQueue (serie.getName (), seasonNumber, chapterNumber + 1)
-    else:
-        if serie.seasonExists (seasonNumber + 1):
-            if serie.chapterNumberExists (seasonNumber + 1, 1):
-                d.addToDownloadQueue (serie.getName (), seasonNumber + 1, 1)
+    try:
+        if serie.chapterNumberExists (seasonNumber, chapterNumber + 1):
+            d.addToDownloadQueue (serie.getName (), seasonNumber, chapterNumber + 1)
+            #print 'downloading ' + str(seasonNumber) + "x" + str (chapterNumber + 1)
+        elif serie.seasonExists (seasonNumber + 1):
+                if serie.chapterNumberExists (seasonNumber + 1, 1):
+                    d.addToDownloadQueue (serie.getName (), seasonNumber + 1, 1)
+                    #print 'downloading ' + str(seasonNumber + 1) + "x" + str (1)
+
+    except Exception as e:
+        pass
+        #print str (e)
 
 
 def checkDownloads (plexSeries):
     while True:
         for plexSerie in plexSeries.all ():
             try:
+                #print plexSerie.title
                 if len (plexSerie.unwatched ()) < 5:
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
-                    if len (plexSerie.unwatched ()) > 0:
-                        plexChapterToDownload = plexSerie.unwatched () [len (plexSerie.unwatched ()) - 1]
-                        downloadNext (dbSerie, int (plexChapterToDownload.seasonNumber), int(plexChapterToDownload.index))
-                    else:
-                        lastChapterWatched = plexSerie.watched () [len (plexSerie.watched ()) - 1]
-                        downloadNext (dbSerie, int (lastChapterWatched.seasonNumber), int (lastChapterWatched.index))
+                    try:
+                        if len (plexSerie.unwatched ()) > 0:
+                            unwatched = len (plexSerie.unwatched ())
+                            lastChapterUnwatched = plexSerie.unwatched () [unwatched - 1]
+
+                            seasonNumber = int (lastChapterUnwatched.seasonNumber)
+                            chapterNumber = int(lastChapterUnwatched.index)
+
+                            while unwatched < 5:
+                                downloadNext (dbSerie, seasonNumber, chapterNumber)
+
+                                if dbSerie.chapterNumberExists (seasonNumber, chapterNumber + 1):
+                                    chapterNumber = chapterNumber + 1
+                                elif dbSerie.seasonExists (seasonNumber + 1):
+                                    seasonNumber = seasonNumber + 1
+                                    chapterNumber = 1
+                                else:
+                                    unwatched = 5
+                                unwatched = unwatched + 1
+                        else:
+                            unwatched = 0
+                            lastChapterWatched = plexSerie.watched () [len (plexSerie.watched ()) - 1]
+
+                            seasonNumber = int (lastChapterWatched.seasonNumber)
+                            chapterNumber = int(lastChapterWatched.index)
+
+                            while unwatched < 5:
+                                downloadNext (dbSerie, seasonNumber, chapterNumber)
+
+                                if dbSerie.chapterNumberExists (seasonNumber, chapterNumber + 1):
+                                    chapterNumber = chapterNumber + 1
+                                elif dbSerie.seasonExists (seasonNumber + 1):
+                                    seasonNumber = seasonNumber + 1
+                                    chapterNumber = 1
+                                else:
+                                    unwatched = 5
+                                unwatched = unwatched + 1
+
+                    except Exception as e:
+                        #print str (e)
+                        d.simpleLog (plexSerie.title, 'error checking ' + str (e))
+
             except Exception as e:
-                d.simpleLog (dbSerie.getName (), 'error checking downloads (' + str (e) + ')')
-                pass
+                #print str (e)
+                d.simpleLog (plexSerie.title, 'not found ' + str(e))
+
         sleep (3 * 3600)
 
 
@@ -80,7 +124,8 @@ def updateSeriesInfo (plexSeries):
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
                     d.updateExistingSerie (dbSerie)
             except Exception as e:
-                d.simpleLog (dbSerie.getName (), 'error updating serieInfo (' + str (e) + ')')
+                print str (e)
+                d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
                 pass
         sleep (24 * 3600)
 
@@ -98,7 +143,7 @@ def processDownloadQueue ():
             actualWorkerThreads = actualWorkerThreads + 1
 
             d.log (queue [0] ['serieName'], int (queue [0] ['seasonNumber']), int(queue [0] ['chapterNumber']), 'processing')
-            print 'processing ' + queue [0] ['serieName']
+            #print 'processing ' + queue [0] ['serieName']
             chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber']})
             threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
 
@@ -115,11 +160,13 @@ def processDownloadQueue ():
                 chapterIds.pop (it)
             it = it + 1
 
+
 def flask (app, pid):
     try:
-        app.run (port = 10925, host = '0.0.0.0')
+        app.run (port = 10921, host = '0.0.0.0')
     except:
         os.kill (pid, signal.SIGKILL)
+
 
 def main ():
     threads = []
