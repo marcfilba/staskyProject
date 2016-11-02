@@ -163,7 +163,7 @@ def processDownloadQueue ():
 
 def flask (app, pid):
     try:
-        app.run (port = 10921, host = '0.0.0.0')
+        app.run (port = 10927, host = '0.0.0.0')
     except:
         os.kill (pid, signal.SIGKILL)
 
