@@ -19,7 +19,6 @@
     </table>
   </form>
 
-
   <?php
 
   if ((isset ($_GET ['serieName'])) && (isset ($_GET ['seasonNumber'])) && (isset ($_GET ['chapterNumber']))){
@@ -35,8 +34,7 @@
       $ret = curl_exec ($ch);
       curl_close ($ch);
 
-      echo $ret;
-
+      echo '<table align="center"><tr><td>' . $ret . '</td></tr></table>';
 
     }
   }
