@@ -132,7 +132,6 @@ class Domain ():
 
         return name.replace('\\', '-').replace('?','').replace('!','') + '.mp4'
 
-
     def getPlexServerName (self):
         return self._ctrlDatabase.getPlexServerName ()
 
@@ -233,7 +232,9 @@ class Domain ():
             self.log (serieName + ' ' + seasonNumber + 'x' + chapterNumber, 'resuming')
 
         try:
-            self.downloadChapter (serieName.lower (), int (seasonNumber), int (chapterNumber))
+            if self.downloadChapter (serieName.lower (), int (seasonNumber), int (chapterNumber)) < 0:
+                self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
+
         except Exception as e:
             #self.simpleLog (serieName, str(seasonNumber) + 'x' + str(chapterNumber) + ' error downloading chapter (domain) (' + str (e) + ')')
             pass
