@@ -25,7 +25,7 @@
     if ((! empty($_GET ['serieName'])) && (! empty($_GET ['seasonNumber'])) && (! empty($_GET ['chapterNumber']))){
 
       echo '<br>';
-      $url = "http://192.168.1.3:10927/addChapterToDownloadQueue?serieName=" . str_replace (' ', '_', $_GET['serieName']) . '&seasonNumber=' . $_GET['seasonNumber'] . '&chapterNumber=' . $_GET ['chapterNumber'];
+      $url = "http://localhost:10927/addChapterToDownloadQueue?serieName=" . str_replace (' ', '_', $_GET['serieName']) . '&seasonNumber=' . $_GET['seasonNumber'] . '&chapterNumber=' . $_GET ['chapterNumber'];
 
       $ch = curl_init();
       curl_setopt ($ch, CURLOPT_URL, $url);

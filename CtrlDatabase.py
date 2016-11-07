@@ -9,8 +9,9 @@ from pymongo import MongoClient
 from Season import Season, Chapter, Link
 from Serie import Serie
 from time import time
+from datetime import datetime
 
-SERVER_IP   = '192.168.1.3'
+SERVER_IP   = 'localhost'
 SERVER_PORT = 27017
 
 DATABASE_NAME = 'stasky'
@@ -156,14 +157,14 @@ class CtrlDatabase ():
             toStore ['serieName'] = serieName
             toStore ['seasonNumber'] = seasonNumber
             toStore ['chapterNumber'] = chapterNumber
-            toStore ['log'].append ({'log' : dataToLog, 'timestamp' : int (time ())})
+            toStore ['log'].append ({'log' : dataToLog, 'timestamp' : int (time ()), 'datetime' : str (datetime.fromtimestamp (int (time ())))})
             self.db ['log'].insert_one (toStore)
         else:
             toStore ['serieName'] = data ['serieName']
             toStore ['seasonNumber'] = data ['seasonNumber']
             toStore ['chapterNumber'] = data ['chapterNumber']
             toStore ['log'] = data ['log']
-            toStore ['log'].append ({'data' : dataToLog, 'timestamp' : int (time ())})
+            toStore ['log'].append ({'log' : dataToLog, 'timestamp' : int (time ()), 'datetime' : str (datetime.fromtimestamp (int (time ())))})
             self.db ['log'].update_one ({'serieName' : serieName, 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber}, {'$set' : toStore})
 
     def simpleLog (self, serieName, dataToLog):

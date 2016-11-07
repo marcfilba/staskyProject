@@ -21,8 +21,6 @@ d = Domain ()
 account = MyPlexAccount.signin (d.getPlexUsername (), d.getPlexPassword ())
 plex = account.resource (d.getPlexServerName ()).connect()
 
-plexSeries = plex.library.section (title = 'Series de TV')
-
 @app.route ("/addChapterToDownloadQueue")
 def addSerieToDownloadQueue():
     serieName = request.args.get ('serieName')
@@ -60,11 +58,13 @@ def downloadNext (serie, seasonNumber, chapterNumber):
         #print str (e)
 
 
-def checkDownloads (plexSeries):
+def checkDownloads ():
     while True:
+        plexSeries = plex.library.section (title = 'Series de TV')
         for plexSerie in plexSeries.all ():
             try:
                 #print plexSerie.title
+                #d.simpleLog (plexSerie.title, 'checking')
                 if len (plexSerie.unwatched ()) < 5:
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
                     try:
@@ -107,27 +107,30 @@ def checkDownloads (plexSeries):
 
                     except Exception as e:
                         #print str (e)
-                        d.simpleLog (plexSerie.title, 'error checking ' + str (e))
+                        d.simpleLog (plexSerie.title, 'error checking (' + str (e) + ')')
 
             except Exception as e:
                 #print str (e)
-                d.simpleLog (plexSerie.title, 'not found ' + str(e))
+                d.simpleLog (plexSerie.title, 'not found (' + str(e) + ')')
 
-        sleep (3 * 3600)
+        #sleep (3 * 3600)
+        sleep (1800) # 30 minutes
 
 
-def updateSeriesInfo (plexSeries):
+def updateSeriesInfo ():
     while True:
+        plexSeries = plex.library.section (title = 'Series de TV')
         for plexSerie in plexSeries.all ():
             try:
                 if len (plexSerie.unwatched ()) < 5:
+                    print plexSerie.title.encode('utf-8')
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
                     d.updateExistingSerie (dbSerie)
             except Exception as e:
-                print str (e)
+                #print str (e)
                 d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
                 pass
-        sleep (24 * 3600)
+        sleep (12 * 3600)
 
 
 def processDownloadQueue ():
@@ -143,7 +146,6 @@ def processDownloadQueue ():
             actualWorkerThreads = actualWorkerThreads + 1
 
             d.log (queue [0] ['serieName'], int (queue [0] ['seasonNumber']), int(queue [0] ['chapterNumber']), 'processing')
-            #print 'processing ' + queue [0] ['serieName']
             chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber']})
             threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
 
@@ -161,19 +163,21 @@ def processDownloadQueue ():
             it = it + 1
 
 
-def flask (app, pid):
+def flask (pid):
     try:
         app.run (port = 10927, host = '0.0.0.0')
     except:
+        print 'Error initiating Stasky'
         os.kill (pid, signal.SIGKILL)
 
 
 def main ():
     threads = []
-    threads.append (Thread (target = checkDownloads,   args = (plexSeries,)))
-    threads.append (Thread (target = updateSeriesInfo, args = (plexSeries,)))
+    threads.append (Thread (target = checkDownloads))
+    threads.append (Thread (target = updateSeriesInfo))
     threads.append (Thread (target = processDownloadQueue))
-    threads.append (Thread (target = flask,            args = (app, os.getpid (),)))
+    threads.append (Thread (target = flask,            args = (os.getpid (),)))
+
     for t in threads: t.start ()
 
 if __name__ == '__main__':
