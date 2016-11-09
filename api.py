@@ -123,12 +123,10 @@ def updateSeriesInfo ():
         for plexSerie in plexSeries.all ():
             try:
                 if len (plexSerie.unwatched ()) < 5:
-                    print plexSerie.title.encode('utf-8')
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
                     d.updateExistingSerie (dbSerie)
             except Exception as e:
-                #print str (e)
-                d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
+                #d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
                 pass
         sleep (12 * 3600)
 
@@ -140,17 +138,22 @@ def processDownloadQueue ():
     chapterIds          = []
 
     while True:
-        sleep (5)
+        sleep (2)
         queue = d.getPendingQueue ()
-        if (queue.count () > 0 and actualWorkerThreads < maxWorkerThreads):
-            actualWorkerThreads = actualWorkerThreads + 1
+        if (queue.count () > 0) and (actualWorkerThreads < maxWorkerThreads):
+            try:
+                d.log (queue [0] ['serieName'], int (queue [0] ['seasonNumber']), int(queue [0] ['chapterNumber']), 'processing')
+                chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber']})
 
-            d.log (queue [0] ['serieName'], int (queue [0] ['seasonNumber']), int(queue [0] ['chapterNumber']), 'processing')
-            chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber']})
-            threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
+                threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
 
-            d.markItemAsNotPending (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])
-            threads [len (threads) -1].start ()
+                d.markItemAsNotPending (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])
+
+                threads [len (threads) -1].start ()
+                actualWorkerThreads = actualWorkerThreads + 1
+                print 'creo thread'
+            except Exception as e:
+                d.simpleLog (queue [0] ['serieName'], str (e))
 
         it = 0
         while it < len (threads):
@@ -160,6 +163,7 @@ def processDownloadQueue ():
                 actualWorkerThreads = actualWorkerThreads - 1
                 threads.pop (it)
                 chapterIds.pop (it)
+                print 'mato thread'
             it = it + 1
 
 

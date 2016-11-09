@@ -148,7 +148,7 @@ class Domain ():
         except Exception as e:
             self._deleteSeriePending (serieName)
             self.log (serieName, seasonNumber, chapterNumber, 'serie not found')
-            return
+            return -5
 
         if serie.seasonExists (seasonNumber):
             if serie.chapterNumberExists (seasonNumber, chapterNumber):
@@ -192,7 +192,8 @@ class Domain ():
                                 self.log (serieName, seasonNumber, chapterNumber, 'moved to serie folder')
                                 return 0
                             except Exception as e:
-                                self.log (serieName, seasonNumber, chapterNumber, 'error moving chapter, move manually from the tmpPath folder (' + str (e) + ')')
+                                self.log (serieName, seasonNumber, chapterNumber, 'error moving chapter, (' + str (e) + '), deleting...')
+                                self._ctrlDisk.deleteFile (name, serieName.getName ())
                                 return -1
 
                         except Exception as e:
@@ -236,7 +237,6 @@ class Domain ():
                 self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
 
         except Exception as e:
-            #self.simpleLog (serieName, str(seasonNumber) + 'x' + str(chapterNumber) + ' error downloading chapter (domain) (' + str (e) + ')')
             pass
 
     def getPendingQueue (self):

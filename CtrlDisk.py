@@ -28,6 +28,12 @@ class CtrlDisk ():
         os.chmod (self.tmpPath + fromPath, 0755)
         shutil.move (self.tmpPath + fromPath, self.seriePath + toPath)
 
+    def deleteFile (self, fromPath, toPath):
+        try:
+            os.remove (self.tmpPath + fromPath)
+        except Exception as e:
+            pass
+
     def getLastChapter (self, serieName):
         if not os.path.exists (self.seriePath + serieName):
             os.makedirs (self.seriePath + serieName)
