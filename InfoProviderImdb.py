@@ -45,6 +45,3 @@ class InfoProviderImdb (InfoProvider):
 
     def getSuggerencies (self):
         return self._suggerencies
-
-#imdb = InfoProviderImdb ()
-#print imdb.loadSerie ('bones')

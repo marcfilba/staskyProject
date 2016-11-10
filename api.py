@@ -11,6 +11,7 @@ from threading import Thread
 from flask import Flask, request
 from sys import exit
 from time import sleep
+from datetime import datetime
 
 import os
 import signal
@@ -21,8 +22,10 @@ d = Domain ()
 account = MyPlexAccount.signin (d.getPlexUsername (), d.getPlexPassword ())
 plex = account.resource (d.getPlexServerName ()).connect()
 
+threads = []
+
 @app.route ("/addChapterToDownloadQueue")
-def addSerieToDownloadQueue():
+def addSerieToDownloadQueue ():
     serieName = request.args.get ('serieName')
     seasonNumber = request.args.get ('seasonNumber')
     chapterNumber = request.args.get ('chapterNumber')
@@ -42,16 +45,39 @@ def addSerieToDownloadQueue():
 
     return '{"err" : 0, "message" : "chapter added to the download queue"}'
 
+@app.route ("/threadsRunning")
+def threadsRunning ():
+    if len (threads) == 4:
+        ret = '{"err" : 0, "message" : {'
+        for t in threads:
+            ret = ret + '"' + t.getName () + '" : '
+            if t.is_alive:
+                ret = ret + 'true, '
+            else:
+                ret = ret + 'false, '
+        return ret [: -2] + '}}'
+
+    return '{"err" : 0, "message" : "testing mode"}'
+
 
 def downloadNext (serie, seasonNumber, chapterNumber):
     try:
+        now = datetime.now().date ()
         if serie.chapterNumberExists (seasonNumber, chapterNumber + 1):
-            d.addToDownloadQueue (serie.getName (), seasonNumber, chapterNumber + 1)
-            #print 'downloading ' + str(seasonNumber) + "x" + str (chapterNumber + 1)
+            releaseDateSt = serie.getSeason (seasonNumber -1).getChapters () [chapterNumber].getReleaseDate ()
+            releaseDate = datetime.strptime(releaseDateSt, '%Y-%m-%d').date()
+
+            if releaseDate <= now:
+                d.addToDownloadQueue (serie.getName (), seasonNumber, chapterNumber + 1)
+                #print 'downloading ' + str(seasonNumber) + "x" + str (chapterNumber + 1)
         elif serie.seasonExists (seasonNumber + 1):
                 if serie.chapterNumberExists (seasonNumber + 1, 1):
-                    d.addToDownloadQueue (serie.getName (), seasonNumber + 1, 1)
-                    #print 'downloading ' + str(seasonNumber + 1) + "x" + str (1)
+                    releaseDateSt = serie.getSeason (seasonNumber).getChapters () [0].getReleaseDate ()
+                    releaseDate = datetime.strptime(releaseDateSt, '%Y-%m-%d').date()
+
+                    if releaseDate <= now:
+                        d.addToDownloadQueue (serie.getName (), seasonNumber + 1, 1)
+                        #print 'downloading ' + str(seasonNumber + 1) + "x" + str (1)
 
     except Exception as e:
         pass
@@ -63,7 +89,7 @@ def checkDownloads ():
         plexSeries = plex.library.section (title = 'Series de TV')
         for plexSerie in plexSeries.all ():
             try:
-                #print plexSerie.title
+                print plexSerie.title
                 #d.simpleLog (plexSerie.title, 'checking')
                 if len (plexSerie.unwatched ()) < 5:
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
@@ -122,11 +148,13 @@ def updateSeriesInfo ():
         plexSeries = plex.library.section (title = 'Series de TV')
         for plexSerie in plexSeries.all ():
             try:
-                if len (plexSerie.unwatched ()) < 5:
-                    dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
-                    d.updateExistingSerie (dbSerie)
+                #print plexSerie.title
+                #if len (plexSerie.unwatched ()) < 5:
+                dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
+                d.updateExistingSerie (dbSerie)
             except Exception as e:
-                #d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
+                print ' -> ' + str (e)
+                d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
                 pass
         sleep (12 * 3600)
 
@@ -151,7 +179,6 @@ def processDownloadQueue ():
 
                 threads [len (threads) -1].start ()
                 actualWorkerThreads = actualWorkerThreads + 1
-                print 'creo thread'
             except Exception as e:
                 d.simpleLog (queue [0] ['serieName'], str (e))
 
@@ -163,7 +190,6 @@ def processDownloadQueue ():
                 actualWorkerThreads = actualWorkerThreads - 1
                 threads.pop (it)
                 chapterIds.pop (it)
-                print 'mato thread'
             it = it + 1
 
 
@@ -176,15 +202,13 @@ def flask (pid):
 
 
 def main ():
-    threads = []
-    threads.append (Thread (target = checkDownloads))
-    threads.append (Thread (target = updateSeriesInfo))
-    threads.append (Thread (target = processDownloadQueue))
-    threads.append (Thread (target = flask,            args = (os.getpid (),)))
+    threads.append (Thread (name = 'checkDownloads',       target = checkDownloads))
+    threads.append (Thread (name = 'updateSeriesInfo',     target = updateSeriesInfo))
+    threads.append (Thread (name = 'processDownloadQueue', target = processDownloadQueue))
+    threads.append (Thread (name = 'flask',                target = flask, args = (os.getpid (),)))
 
     for t in threads: t.start ()
 
 if __name__ == '__main__':
     daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
     daemon.start()
-    #main ()

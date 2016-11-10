@@ -6,7 +6,8 @@ from DownloadNowVideo import DownloadNowVideo
 from DownloadStreamin import DownloadStreamin
 from DownloadStreamPlay import DownloadStreamPlay
 
-from InfoProviderImdb import InfoProviderImdb
+#from InfoProviderImdb import InfoProviderImdb
+from InfoProviderTvmaze import InfoProviderTvmaze
 
 #from LinksProviderSeriesFlv import LinksProviderSeriesFlv
 from LinksProviderSeriesPepito import LinksProviderSeriesPepito
@@ -25,7 +26,8 @@ class CtrlProviders():
     def __init__ (self, tmpPath):
 
         self.TMP_PATH = tmpPath
-        self._infoProviderImdb = InfoProviderImdb ()
+        #self._infoProviderImdb = InfoProviderImdb ()
+        self._infoProviderTvmaze =  InfoProviderTvmaze ()
 
         #self._linkProviders = [LinksProviderPordede(), LinksProviderSeriesAdicto(), LinksProviderSeriesFlv(), LinksProviderSeriesPepito()]
         #self._linkProviders = [LinksProviderPordede(), LinksProviderSeriesAdicto(), LinksProviderSeriesPepito()]
@@ -46,7 +48,8 @@ class CtrlProviders():
             downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
 
     def loadSerie (self, serieName):
-        data = self._infoProviderImdb.loadSerie (serieName)
+        #data = self._infoProviderImdb.loadSerie (serieName)
+        data = self._infoProviderTvmaze.loadSerie (serieName)
         #if data == None:
 			#data = self._infoProviderAnime.loadSerie (serieName)
 			#if data == None:
@@ -55,7 +58,8 @@ class CtrlProviders():
         return data
 
     def getSuggerencies (self):
-        return self._infoProviderImdb.getSuggerencies ()
+        #return self._infoProviderImdb.getSuggerencies ()
+        return self._infoProviderTvmaze.getSuggerencies ()
 
     def getMainInfo (self, serieName):
         q = Queue()

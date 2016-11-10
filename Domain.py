@@ -13,6 +13,9 @@ from random import randint
 from threading import Thread
 from time import sleep
 
+import exceptions
+import errno
+
 class Domain ():
 
     def __init__ (self):
@@ -68,7 +71,8 @@ class Domain ():
 
         serie = Serie ()
         serie.loadSerie (serieData)
-        if serieNameOk != serieName.lower ():
+
+        if (serieNameOk != serieName.lower ()) or (serieNameOk != serie.getName ().lower ()):
             serie.addKeyName (serieName.lower ())
 
         serieMainPages = []
@@ -89,8 +93,8 @@ class Domain ():
         else:
             self._addSeriePending (serieName)
             serie = self._updateSerie (serieName)
+            self._deleteSeriePending (serieName)
 
-        self._deleteSeriePending (serieName)
         return serie
 
     def _selectChapter (self, links, languages):
@@ -191,10 +195,15 @@ class Domain ():
                                 self._ctrlDisk.moveFile (name, serie.getName ())
                                 self.log (serieName, seasonNumber, chapterNumber, 'moved to serie folder')
                                 return 0
-                            except Exception as e:
-                                self.log (serieName, seasonNumber, chapterNumber, 'error moving chapter, (' + str (e) + '), deleting...')
+
+                            except exceptions.NameError as e:
+                                self.log (serieName, seasonNumber, chapterNumber, 'error moving chapter, (' + str (e) + '), deleting')
                                 self._ctrlDisk.deleteFile (name, serieName.getName ())
-                                return -1
+                            except exceptions.OSError as e:
+                                if e.errno == errno.EEXIST:
+                                    self.log (serieName, seasonNumber, chapterNumber, 'error moving chapter, (' + str (e) + '), move it manually')
+
+                            return -1
 
                         except Exception as e:
                             iterator = 0

@@ -69,8 +69,8 @@ class Serie ():
 	def _loadChapter (self, episode):
 		c = Chapter ()
 
-		c.setName (episode ['Title'])
-		c.setReleaseDate (episode ['Released'])
+		c.setName (episode ['title'])
+		c.setReleaseDate (episode ['airDate'])
 
 		return c
 
@@ -80,19 +80,19 @@ class Serie ():
 
 		serieJson = json.loads(serieData)
 
-		self._name = serieJson ['serie']['Title']
+		self._name = serieJson ['serie']['title']
 		self._keyNames.append (self._name.lower ())
-		self._description = serieJson ['serie']['Plot']
+		self._description = serieJson ['serie']['summary'].replace ('<p>', '').replace ('</p>', '').replace ('<strong>', '').replace ('</strong>', '').replace ('<em>', '').replace ('</em>', '')
 
 		season = 0
 		while season < len (serieJson['seasons']):
 			s = Season ()
 			chapter = 0
 			try:
-				while chapter < len(serieJson['seasons'][season]['Episodes']):
+				while chapter < len(serieJson['seasons'][season]['episodes']):
 					c = Chapter ()
 
-					episode = serieJson['seasons'][season]['Episodes'][chapter]
+					episode = serieJson['seasons'][season]['episodes'][chapter]
 					c = self._loadChapter (episode)
 
 					s.addChapter (c)
@@ -101,7 +101,7 @@ class Serie ():
 				self._seasons.append(s)
 
 			except Exception as e:
-				print e
+				#print e
 				pass
 			season += 1
 
