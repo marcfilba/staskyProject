@@ -11,8 +11,6 @@ class DownloadNowVideo (Download):
                 return line.split ('"')[1]
 
     def downloadVideo (self, link, name):
-        #print '  -> going to ' + link
-
         url = link.replace ('video/', 'mobile/video.php?id=')
         r = requests.get (url, headers = { "user-agent": "Mozilla/5.0" })
 
@@ -22,8 +20,5 @@ class DownloadNowVideo (Download):
         sources = data.get_by (tag = 'source')
 
         for s in sources:
-            try:
-                self.downloadVideoFile (s.attrs ['src'][0], name)
-                return
-            except Exception as e:
-                raise Exception (str(e))
+            self.downloadVideoFile (s.attrs ['src'][0], name)
+            return
