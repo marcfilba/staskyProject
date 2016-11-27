@@ -139,7 +139,6 @@ def checkDownloads ():
                 #print str (e)
                 d.simpleLog (plexSerie.title, 'not found (' + str(e) + ')')
 
-        #sleep (3 * 3600)
         sleep (1800) # 30 minutes
 
 
@@ -148,13 +147,13 @@ def updateSeriesInfo ():
         plexSeries = plex.library.section (title = 'Series de TV')
         for plexSerie in plexSeries.all ():
             try:
-                #print plexSerie.title
+                print plexSerie.title
                 #if len (plexSerie.unwatched ()) < 5:
                 dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
                 d.updateExistingSerie (dbSerie)
             except Exception as e:
-                print ' -> ' + str (e)
-                d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
+                #print ' -> ' + str (e)
+                #d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
                 pass
         sleep (12 * 3600)
 

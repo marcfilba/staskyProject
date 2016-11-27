@@ -157,14 +157,14 @@ class CtrlDatabase ():
             toStore ['serieName'] = serieName
             toStore ['seasonNumber'] = seasonNumber
             toStore ['chapterNumber'] = chapterNumber
-            toStore ['log'].append ({'log' : dataToLog, 'timestamp' : int (time ()), 'datetime' : str (datetime.fromtimestamp (int (time ())))})
+            toStore ['log'].append ({'log' : dataToLog, 'datetime' : str (datetime.fromtimestamp (int (time ())))})
             self.db ['log'].insert_one (toStore)
         else:
             toStore ['serieName'] = data ['serieName']
             toStore ['seasonNumber'] = data ['seasonNumber']
             toStore ['chapterNumber'] = data ['chapterNumber']
             toStore ['log'] = data ['log']
-            toStore ['log'].append ({'log' : dataToLog, 'timestamp' : int (time ()), 'datetime' : str (datetime.fromtimestamp (int (time ())))})
+            toStore ['log'].append ({'log' : dataToLog, 'datetime' : str (datetime.fromtimestamp (int (time ())))})
             self.db ['log'].update_one ({'serieName' : serieName, 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber}, {'$set' : toStore})
 
     def simpleLog (self, serieName, dataToLog):
