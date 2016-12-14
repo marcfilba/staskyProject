@@ -56,12 +56,12 @@ class LinksProviderPordede(LinksProvider):
         return
 
     def getLinkInfo (self, chapterLink, scraper, q):
-        childs = chapterLink.get_childs()[0].get_childs()
-        host = str(childs[0].get_childs()[0].attrs['src'][0].split ('_')[1].split('.')[0])
-
-        _parser = Parser ()
-
         try:
+            childs = chapterLink.get_childs()[0].get_childs()
+            host = str(childs[0].get_childs()[0].attrs['src'][0].split ('_')[1].split('.')[0])
+
+            _parser = Parser ()
+
             if isValidHost (host):
                 flags = childs[1].get_by (tag = 'div')
 
@@ -91,11 +91,13 @@ class LinksProviderPordede(LinksProvider):
                 url = data.get_by (clazz = 'episodeText')[0].attrs['href'][0]
 
                 s =  scraper.post (self._URL[:-1] + url, headers = self.headers)
+
                 l.setURL (s.url)
 
                 q.put((self._name, l))
 
         except Exception as e:
+            #print str (e)
             pass
 
     def getChapterUrls (self, serieUrl, seasonNumber, chapterNumber, q):
@@ -126,22 +128,9 @@ class LinksProviderPordede(LinksProvider):
             onlineLinks = data.get_by (clazz = 'linksPopup')[0].get_childs()[3]
             chapterLinks = onlineLinks.get_by (clazz = 'a aporteLink done')
 
-            i = 0
+            for e in chapterLinks:
+                self.getLinkInfo (e, scraper, q)
 
-            numThreads = len (chapterLinks) // 4
-
-            while (i < len (chapterLinks)):
-
-                threads = []
-
-                for j in range (0, numThreads):
-                    if i >= len (chapterLinks):
-                        break
-
-                    threads.append (Thread (target=self.getLinkInfo, args= (chapterLinks[i], scraper, q)))
-                    i += 1
-
-                for thread in threads: thread.start()
-                for thread in threads: thread.join (5)
         except Exception as e:
+            #print str (e)
             pass

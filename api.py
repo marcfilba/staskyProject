@@ -41,7 +41,7 @@ def addSerieToDownloadQueue ():
     elif not isNumber (chapterNumber):
         return '{"err" : 1, "message" : "chapterNumber is not a number"}'
 
-    d.addToDownloadQueue (serieName.replace ('_', ' '), seasonNumber, chapterNumber)
+    d.addToDownloadQueue (serieName.replace ('_', ' '), int (seasonNumber), int (chapterNumber))
 
     return '{"err" : 0, "message" : "chapter added to the download queue"}'
 
@@ -169,7 +169,6 @@ def processDownloadQueue ():
         queue = d.getPendingQueue ()
         if (queue.count () > 0) and (actualWorkerThreads < maxWorkerThreads):
             try:
-                d.log (queue [0] ['serieName'], int (queue [0] ['seasonNumber']), int(queue [0] ['chapterNumber']), 'processing')
                 chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber']})
 
                 threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
@@ -179,6 +178,7 @@ def processDownloadQueue ():
                 threads [len (threads) -1].start ()
                 actualWorkerThreads = actualWorkerThreads + 1
             except Exception as e:
+                print str (e)
                 d.simpleLog (queue [0] ['serieName'], str (e))
 
         it = 0
@@ -211,3 +211,4 @@ def main ():
 if __name__ == '__main__':
     daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
     daemon.start()
+    #main ()

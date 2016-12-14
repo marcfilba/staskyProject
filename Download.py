@@ -9,7 +9,8 @@ class Download ():
         r = requests.get (videoLink, stream = True)
         totalLength = float (r.headers.get ('content-length'))
 
-        if totalLength < 1024000:
+        if totalLength < 10240000:
+            print '-> video with not enough length'
             raise Exception ('  -> video with not enough length! ' + str( format (totalLength/1024, '.2f')) + ' KB')
 
         #stdout.write ('  -> downloading "' + name.split ('/') [len (name.split ('/'))-1] + '" (' + str( format (totalLength / 1024 / 1024, '.2f')) + ' MB) [')
@@ -33,7 +34,7 @@ class Download ():
             #stdout.flush ()
 
             if downloaded != totalLength:
-                print 'error downloading ' + name.split ('/') [len (name.split ('/'))-1]
+                #print 'error downloading ' + name.split ('/') [len (name.split ('/'))-1]
                 raise Exception ('  -> error downloading ' + name)
 
             #print name.split ('/') [len (name.split ('/'))-1] + '" downloaded successfull'

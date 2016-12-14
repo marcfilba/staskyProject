@@ -106,9 +106,10 @@ class Domain ():
             for i, l in enumerate(links):
                 if languages ['languages'] [it].lower () in l.getLanguage ().lower () and languages ['subtitles'] [it].lower () in l.getSubtitles ().lower ():
                     if 'streamcloud' in l.getHost ().lower () or \
-    				   'nowvideo' in l.getHost ().lower () or \
-    				   'streamin' in l.getHost ().lower () or \
-    				   'streamplay' in l.getHost ().lower ():
+    				   'nowvideo' in l.getHost ().lower ():
+                       # or \
+    				   #'streamin' in l.getHost ().lower () or \
+    				   #'streamplay' in l.getHost ().lower ():
     					possibleLinks.append (l)
                 if len (possibleLinks) == 0:
                     it = it + 1
@@ -177,7 +178,7 @@ class Domain ():
                 if len(chapterUrls) > 0:
                     downloadErr = True
 
-                    self.log (serieName, seasonNumber, chapterNumber, str (len (chapterUrls)) + ' links found, starting download')
+                    self.log (serieName, seasonNumber, chapterNumber, str (len (chapterUrls)) + ' links found')
                     while downloadErr:
                         selectedChapter = self._selectChapter (chapterUrls, serie.getLanguages ())
                         if selectedChapter == None:
@@ -186,6 +187,9 @@ class Domain ():
                         name = self._buildName (serie, seasonNumber, chapterNumber, selectedChapter.getLanguage(), selectedChapter.getSubtitles())
 
                         try:
+                            #selectedChapter.printLink ()
+                            #print selectedChapter.getURL ()
+                            self.log (serieName, seasonNumber, chapterNumber,'starting download ' + str (selectedChapter.getURL ()))
                             self._ctrlProviders.downloadVideo (selectedChapter.getURL (), selectedChapter.getHost (), name)
                             self.log (serieName, seasonNumber, chapterNumber, 'downloaded successfull')
                             serie.getSeasons ()[seasonNumber-1].getChapters ()[chapterNumber-1].setLinkArray ([])
@@ -206,6 +210,8 @@ class Domain ():
                             return -1
 
                         except Exception as e:
+                            print str (e)
+                            self.log (serieName, seasonNumber, chapterNumber,'failed download, trying another link')
                             iterator = 0
                             deleted = False
                             while iterator < len (chapterUrls) and not deleted:
@@ -234,19 +240,18 @@ class Domain ():
         self._ctrlDatabase.simpleLog (serieName, dataToLog)
 
     def processSingleDownload (self, serieName, seasonNumber, chapterNumber):
+        self.log (serieName, seasonNumber, chapterNumber, 'processing')
         if self._isSeriePending (serieName):
-            self.log (serieName + ' ' + seasonNumber + 'x' + chapterNumber, 'waiting for serie data')
+            self.log (serieName, seasonNumber, chapterNumber, 'waiting for serie data')
             while self._isSeriePending (serieName):
                 sleep (3)
 
-            self.log (serieName + ' ' + seasonNumber + 'x' + chapterNumber, 'resuming')
+            self.log (serieName, seasonNumber, chapterNumber, 'resuming')
 
-        try:
-            if self.downloadChapter (serieName.lower (), int (seasonNumber), int (chapterNumber)) < 0:
-                self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
-
-        except Exception as e:
-            pass
+        if self.downloadChapter (serieName.lower (), seasonNumber, chapterNumber) == 0:
+            self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
+        #else:
+        #    self._ctrlDatabase.markItemAsPending (serieName, seasonNumber, chapterNumber)
 
     def getPendingQueue (self):
         return self._ctrlDatabase.getPendingQueue ()

@@ -148,6 +148,10 @@ class CtrlDatabase ():
         toStore = {'serieName' : serieName.lower (), 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber, 'pending' : False}
         self.db ['downloadQueue'].update_one ({'serieName' : serieName.lower (), 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber}, {'$set' : toStore})
 
+    def markItemAsPending (self, serieName, seasonNumber, chapterNumber):
+        toStore = {'serieName' : serieName.lower (), 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber, 'pending' : True}
+        self.db ['downloadQueue'].update_one ({'serieName' : serieName.lower (), 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber}, {'$set' : toStore})
+
     def log (self, serieName, seasonNumber, chapterNumber, dataToLog):
         #data = self.db ['log'].find_one ({'chapterId' : chapterId})
         data = self.db ['log'].find_one ({'serieName' : serieName, 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber})

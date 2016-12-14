@@ -18,12 +18,19 @@ class DownloadStreamCloud (Download):
             'usr_login': ''
         }
 
-        r = requests.post (link, data = data)
+        try:
+            retry = 5
+            while retry > 0:
+                r = requests.get (link)
+                time.sleep (10)
+                r = requests.post (link, data = data)
 
-        for line in r.iter_lines():
-            if '.mp4' in line:
-                return line.split ('"') [1]
+                for line in r.content.encode('ascii','replace').split ('\n'):
+                    if 'file:' in line:
+                        return line.split ('"') [1]
+                retry = retry - 1
 
+        except: pass
 
     def downloadVideo (self, link, name):
         videoLink = self.getVideoLink (link)

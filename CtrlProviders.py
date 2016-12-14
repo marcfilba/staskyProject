@@ -36,16 +36,16 @@ class CtrlProviders():
     def downloadVideo (self, url, host, name):
         if 'streamcloud' in host.lower():
             d = DownloadStreamCloud ()
-            downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
+            downloadErr = d.downloadVideo (url, self.TMP_PATH + name)
         elif 'nowvideo' in host.lower():
             d = DownloadNowVideo ()
-            downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
-        elif 'streamplay' in host.lower():
-            d =  DownloadStreamPlay ()
-            downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
-        elif 'streamin' in host.lower() or 'streaminto' in host.lower():
-            d =  DownloadStreamin ()
-            downloadErr = d.downloadVideo (url, self.TMP_PATH + '/' + name)
+            downloadErr = d.downloadVideo (url, self.TMP_PATH + name)
+        #elif 'streamplay' in host.lower():
+        #    d =  DownloadStreamPlay ()
+        #    downloadErr = d.downloadVideo (url, self.TMP_PATH + name)
+        #elif 'streamin' in host.lower() or 'streaminto' in host.lower():
+        ##    d =  DownloadStreamin ()
+        #    downloadErr = d.downloadVideo (url, self.TMP_PATH + name)
 
     def loadSerie (self, serieName):
         #data = self._infoProviderImdb.loadSerie (serieName)
@@ -91,7 +91,6 @@ class CtrlProviders():
 
         dataTmp = []
         data = []
-
 
         while q.qsize() > 0:
             dataTmp.append(q.get()[1])
