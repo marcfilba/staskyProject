@@ -211,4 +211,3 @@ def main ():
 if __name__ == '__main__':
     daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
     daemon.start()
-    #main ()

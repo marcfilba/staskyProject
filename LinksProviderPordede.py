@@ -19,7 +19,6 @@ class LinksProviderPordede(LinksProvider):
             'Accept' : '*/*',
             'Accept-Encoding' : 'gzip, deflate',
             'Connection' : 'keep-alive',
-            'Content-Length' : '104',
             'Content-Type' : 'application/x-www-form-urlencoded; charset=UTF-8',
             'Host' : 'www.pordede.com',
             'Referer' : 'http://www.pordede.com/',
@@ -97,7 +96,7 @@ class LinksProviderPordede(LinksProvider):
                 q.put((self._name, l))
 
         except Exception as e:
-            #print str (e)
+            print '2 - ' + str (e)
             pass
 
     def getChapterUrls (self, serieUrl, seasonNumber, chapterNumber, q):
@@ -111,7 +110,6 @@ class LinksProviderPordede(LinksProvider):
             data = _parser.feed (s.content)
 
             seasons = data.get_by (clazz = 'episodes')
-
             linkToChapter = ''
             for s in seasons:
                 if 'episodes-' + str(seasonNumber) in s.attrs['id'][0]:
@@ -132,5 +130,5 @@ class LinksProviderPordede(LinksProvider):
                 self.getLinkInfo (e, scraper, q)
 
         except Exception as e:
-            #print str (e)
+            print '1 - ' + str (e)
             pass

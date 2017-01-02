@@ -29,6 +29,7 @@ class DownloadStreamCloud (Download):
                     if 'file:' in line:
                         return line.split ('"') [1]
                 retry = retry - 1
+                time.sleep (1)
 
         except: pass
 
