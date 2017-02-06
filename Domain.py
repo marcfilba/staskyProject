@@ -261,12 +261,12 @@ class Domain ():
         try:
             if self.downloadChapter (serieName.lower (), seasonNumber, chapterNumber) == 0:
                 self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
+            else:
+                self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
+                self.addToDownloadQueue (serieName, seasonNumber, chapterNumber, 7200)
         except Exception as e:
-            #print "Erro downloading chapter " + str (e) + ' ' + serieName + ' ' + str (seasonNumber) + 'x' + str (chapterNumber)
+            print "Error downloading chapter " + str (e) + ' ' + serieName + ' ' + str (seasonNumber) + 'x' + str (chapterNumber)
             pass
-        #else:
-        #    self._ctrlDatabase.markItemAsPending (serieName, seasonNumber, chapterNumber)
-        print 'die potatoe!'
 
     def getPendingQueue (self):
         return self._ctrlDatabase.getPendingQueue ()

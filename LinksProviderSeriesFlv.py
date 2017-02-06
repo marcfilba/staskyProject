@@ -85,8 +85,6 @@ class LinksProviderSeriesFlv (LinksProvider):
                             l.setLanguage ('English')
                             l.setSubtitles ('English')
 
-                        l.printLink ()
-
                         itemFound = False
                         for item in chapterUrlArray:
                             if str(item.getURL ()) == str(l.getURL ()):

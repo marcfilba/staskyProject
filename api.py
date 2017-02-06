@@ -172,11 +172,12 @@ def chapterDownloadedSuccessful (serie, seasonNumber, chapterNumber):
 def processDownloadQueue ():
     maxWorkerThreads    = 3
     actualWorkerThreads = 0
+    waitSeconds         = 3
     threads             = []
     chapterIds          = []
 
     while True:
-        sleep (3)
+        sleep (waitSeconds)
         queue = d.getPendingQueue ()
         if (queue.count () > 0) and (actualWorkerThreads < maxWorkerThreads):
                 try:
@@ -195,7 +196,7 @@ def processDownloadQueue ():
                         serieName = queue [0] ['serieName']
                         seasonNumber = queue [0] ['seasonNumber']
                         chapterNumber = queue [0] ['chapterNumber']
-                        retries = queue [0] ['retries'] - queue.count ()
+                        retries = queue [0] ['retries'] - (queue.count () * waitSeconds)
 
                         d.downloadedFromDownloadQueue (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])
                         d.addToDownloadQueue (serieName, seasonNumber, chapterNumber, retries)
@@ -208,11 +209,10 @@ def processDownloadQueue ():
         while it < len (threads):
             if not threads [it].is_alive ():
                 threads [it].join ()
-                d.downloadedFromDownloadQueue (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'])
-                if  (not chapterDownloadedSuccessful (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'])):
-                    chapterIds [it] ['retries'] = 7200
-                    d.addToDownloadQueue (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'], chapterIds [it] ['retries'])
-
+                #d.downloadedFromDownloadQueue (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'])
+                #if  (not chapterDownloadedSuccessful (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'])):
+                #    chapterIds [it] ['retries'] = 7200
+                #    d.addToDownloadQueue (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'], chapterIds [it] ['retries'])
                 actualWorkerThreads = actualWorkerThreads - 1
                 threads.pop (it)
                 chapterIds.pop (it)
@@ -236,10 +236,10 @@ def main ():
     for t in threads: t.start ()
 
 if __name__ == '__main__':
-    #daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
-    #daemon.start()
+    daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
+    daemon.start()
     #main ()
 
-    updateSeriesInfo ()
+    #updateSeriesInfo ()
     #checkDownloads ()
     #processDownloadQueue ()
