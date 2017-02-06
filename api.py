@@ -41,7 +41,7 @@ def addSerieToDownloadQueue ():
     elif not isNumber (chapterNumber):
         return '{"err" : 1, "message" : "chapterNumber is not a number"}'
 
-    d.addToDownloadQueue (serieName.replace ('_', ' '), int (seasonNumber), int (chapterNumber))
+    d.addToDownloadQueue (serieName.replace ('_', ' '), int (seasonNumber), int (chapterNumber), 0)
 
     return '{"err" : 0, "message" : "chapter added to the download queue"}'
 
@@ -68,7 +68,7 @@ def downloadNext (serie, seasonNumber, chapterNumber):
             releaseDate = datetime.strptime(releaseDateSt, '%Y-%m-%d').date()
 
             if releaseDate <= now:
-                d.addToDownloadQueue (serie.getName (), seasonNumber, chapterNumber + 1)
+                d.addToDownloadQueue (serie.getName (), seasonNumber, chapterNumber + 1, 0)
                 #print 'downloading ' + str(seasonNumber) + "x" + str (chapterNumber + 1)
         elif serie.seasonExists (seasonNumber + 1):
                 if serie.chapterNumberExists (seasonNumber + 1, 1):
@@ -76,7 +76,7 @@ def downloadNext (serie, seasonNumber, chapterNumber):
                     releaseDate = datetime.strptime(releaseDateSt, '%Y-%m-%d').date()
 
                     if releaseDate <= now:
-                        d.addToDownloadQueue (serie.getName (), seasonNumber + 1, 1)
+                        d.addToDownloadQueue (serie.getName (), seasonNumber + 1, 1, 0)
                         #print 'downloading ' + str(seasonNumber + 1) + "x" + str (1)
 
     except Exception as e:
@@ -87,10 +87,10 @@ def downloadNext (serie, seasonNumber, chapterNumber):
 def checkDownloads ():
     while True:
         plexSeries = plex.library.section (title = 'Series de TV')
-        for plexSerie in plexSeries.all ():
+        print str (len (plexSeries.all ())) + " series found"
+        for i, plexSerie in enumerate (plexSeries.all ()):
             try:
-                print plexSerie.title
-                #d.simpleLog (plexSerie.title, 'checking')
+                print " " + str (i + 1) + " - " + plexSerie.title
                 if len (plexSerie.unwatched ()) < 5:
                     dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
                     try:
@@ -132,12 +132,12 @@ def checkDownloads ():
                                 unwatched = unwatched + 1
 
                     except Exception as e:
-                        #print str (e)
-                        d.simpleLog (plexSerie.title, 'error checking (' + str (e) + ')')
+                        print " -> error checking " + str (e)
+                        #d.simpleLog (plexSerie.title, 'error checking (' + str (e) + ')')
 
             except Exception as e:
-                #print str (e)
-                d.simpleLog (plexSerie.title, 'not found (' + str(e) + ')')
+                print " -> not found " + str (e)
+                #d.simpleLog (plexSerie.title, 'not found (' + str(e) + ')')
 
         sleep (1800) # 30 minutes
 
@@ -145,18 +145,29 @@ def checkDownloads ():
 def updateSeriesInfo ():
     while True:
         plexSeries = plex.library.section (title = 'Series de TV')
-        for plexSerie in plexSeries.all ():
+        print str (len (plexSeries.all ())) + " series found"
+        for i, plexSerie in enumerate (plexSeries.all ()):
+            print " " + str (i + 1) + " - " + plexSerie.title
             try:
-                print plexSerie.title
-                #if len (plexSerie.unwatched ()) < 5:
-                dbSerie = d._getSerie (plexSerie.title.encode('utf-8'))
+                dbSerie = d._getSerie (plexSerie.title.encode('utf-8', 'ignore'))
+                #dbSerie = d._getSerie ( str(unicodedata.normalize('NFKD', unicode (plexSerie.title, 'utf-8')).encode('ASCII', 'ignore')))
                 d.updateExistingSerie (dbSerie)
             except Exception as e:
-                #print ' -> ' + str (e)
+                print ' -> ' + str (e)
                 #d.simpleLog (plexSerie.title, 'error updating serieInfo (' + str (e) + ')')
                 pass
         sleep (12 * 3600)
 
+def chapterDownloadedSuccessful (serie, seasonNumber, chapterNumber):
+    plexSeries = plex.library.section (title = 'Series de TV')
+    for i, plexSerie in enumerate (plexSeries.all ()):
+        if serie == plexSerie.title.lower ():
+            for s in plexSerie.seasons ():
+                if int(s.seasonNumber) == seasonNumber:
+                    for e in s.episodes ():
+                        if int (e.index) == chapterNumber:
+                            return True
+    return False
 
 def processDownloadQueue ():
     maxWorkerThreads    = 3
@@ -165,27 +176,43 @@ def processDownloadQueue ():
     chapterIds          = []
 
     while True:
-        sleep (2)
+        sleep (3)
         queue = d.getPendingQueue ()
         if (queue.count () > 0) and (actualWorkerThreads < maxWorkerThreads):
-            try:
-                chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber']})
+                try:
+                    if (queue [0] ['retries'] <= 0):
+                        print "Poso " + queue [0] ['serieName'] + ' ' + str(queue [0] ['seasonNumber']) + 'x' + str(queue [0] ['chapterNumber']) + ' a la cua'
+                        chapterIds.append ({'serieName' : queue [0] ['serieName'], 'seasonNumber' : queue [0] ['seasonNumber'], 'chapterNumber' : queue [0] ['chapterNumber'], 'retries' : queue [0] ['retries']})
 
-                threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
+                        threads.append (Thread (target = d.processSingleDownload, args = (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])))
+                        d.markItemAsNotPending (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])
 
-                d.markItemAsNotPending (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])
+                        threads [len (threads) -1].start ()
+                        actualWorkerThreads = actualWorkerThreads + 1
+                    else:
+                        print 'retries ' + queue [0] ['serieName'] + ' ' + str(queue [0] ['seasonNumber']) + 'x' + str(queue [0] ['chapterNumber']) + '-> ' + str (queue [0] ['retries'])
 
-                threads [len (threads) -1].start ()
-                actualWorkerThreads = actualWorkerThreads + 1
-            except Exception as e:
-                print str (e)
-                d.simpleLog (queue [0] ['serieName'], str (e))
+                        serieName = queue [0] ['serieName']
+                        seasonNumber = queue [0] ['seasonNumber']
+                        chapterNumber = queue [0] ['chapterNumber']
+                        retries = queue [0] ['retries'] - queue.count ()
+
+                        d.downloadedFromDownloadQueue (queue [0] ['serieName'], queue [0] ['seasonNumber'], queue [0] ['chapterNumber'])
+                        d.addToDownloadQueue (serieName, seasonNumber, chapterNumber, retries)
+
+                except Exception as e:
+                    print str (e)
+                    d.simpleLog (queue [0] ['serieName'], str (e))
 
         it = 0
         while it < len (threads):
             if not threads [it].is_alive ():
                 threads [it].join ()
                 d.downloadedFromDownloadQueue (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'])
+                if  (not chapterDownloadedSuccessful (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'])):
+                    chapterIds [it] ['retries'] = 7200
+                    d.addToDownloadQueue (chapterIds [it] ['serieName'], chapterIds [it] ['seasonNumber'], chapterIds [it] ['chapterNumber'], chapterIds [it] ['retries'])
+
                 actualWorkerThreads = actualWorkerThreads - 1
                 threads.pop (it)
                 chapterIds.pop (it)
@@ -209,5 +236,10 @@ def main ():
     for t in threads: t.start ()
 
 if __name__ == '__main__':
-    daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
-    daemon.start()
+    #daemon = Daemonize (app = 'stasky', pid = '/tmp/staskyPid', action = main)
+    #daemon.start()
+    #main ()
+
+    updateSeriesInfo ()
+    #checkDownloads ()
+    #processDownloadQueue ()

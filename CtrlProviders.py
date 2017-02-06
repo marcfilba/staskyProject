@@ -9,8 +9,8 @@ from DownloadStreamPlay import DownloadStreamPlay
 #from InfoProviderImdb import InfoProviderImdb
 from InfoProviderTvmaze import InfoProviderTvmaze
 
-#from LinksProviderSeriesFlv import LinksProviderSeriesFlv
-from LinksProviderSeriesPepito import LinksProviderSeriesPepito
+from LinksProviderSeriesFlv import LinksProviderSeriesFlv
+#from LinksProviderSeriesPepito import LinksProviderSeriesPepito
 from LinksProviderSeriesAdicto import LinksProviderSeriesAdicto
 from LinksProviderPordede import LinksProviderPordede
 
@@ -30,8 +30,8 @@ class CtrlProviders():
         self._infoProviderTvmaze =  InfoProviderTvmaze ()
 
         #self._linkProviders = [LinksProviderPordede(), LinksProviderSeriesAdicto(), LinksProviderSeriesFlv(), LinksProviderSeriesPepito()]
-        #self._linkProviders = [LinksProviderPordede(), LinksProviderSeriesAdicto(), LinksProviderSeriesPepito()]
-        self._linkProviders = [LinksProviderPordede()]
+        self._linkProviders = [LinksProviderPordede(), LinksProviderSeriesAdicto(), LinksProviderSeriesFlv ()]
+        #self._linkProviders = [LinksProviderSeriesFlv (), LinksProviderSeriesAdicto ()]
 
     def downloadVideo (self, url, host, name):
         if 'streamcloud' in host.lower():

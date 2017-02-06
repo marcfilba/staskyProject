@@ -8,12 +8,11 @@ from Parser import Parser
 from Tools import isValidHost
 
 from Season import Link
-from threading import Thread
 
-class LinksProviderPordede(LinksProvider):
+class LinksProviderPordede (LinksProvider):
 
     def __init__ (self):
-        super(LinksProviderPordede, self).__init__('pordede', 'http://pordede.com/')
+        super (LinksProviderPordede, self).__init__('pordede', 'http://pordede.com/')
 
         self.headers = {
             'Accept' : '*/*',
@@ -34,11 +33,6 @@ class LinksProviderPordede(LinksProvider):
 
     def getMainPageLink (self, serieName, q):
 
-        if serieName.lower() == 'daredevil':
-            serieName = "marvel's daredevil"
-        elif serieName.lower() =='gambling apocalypse kaiji':
-            serieName = 'kaiji'
-
         scraper = cfscrape.create_scraper()
         s = scraper.post (self._URL + 'site/login', headers = self.headers, data = self.data)
         s = scraper.post (self._URL + 'search/autocomplete?popup=1', headers = self.headers, data = {"query" : serieName.lower ()})
@@ -50,9 +44,9 @@ class LinksProviderPordede(LinksProvider):
 
         for f in films:
             if "Serie" in f.childs[1].attrs['data'][0]:
+                #print 'found ' + self._URL + f.childs[0].attrs['href'][0][1:]
                 q.put((self._name, self._URL + f.childs[0].attrs['href'][0][1:]))
                 break
-        return
 
     def getLinkInfo (self, chapterLink, scraper, q):
         try:

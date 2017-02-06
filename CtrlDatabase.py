@@ -118,8 +118,8 @@ class CtrlDatabase ():
             return True
         return False
 
-    def addToDownloadQueue (self, serieName, seasonNumber, chapterNumber):
-        toStore = {'serieName' : serieName, 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber, 'pending' : True}
+    def addToDownloadQueue (self, serieName, seasonNumber, chapterNumber, retries):
+        toStore = {'serieName' : serieName, 'seasonNumber' : seasonNumber, 'chapterNumber' : chapterNumber, 'pending' : True, 'retries' : retries}
         self.db ['downloadQueue'].insert_one (toStore)
 
     def getDownloadQueue (self):

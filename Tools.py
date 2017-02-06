@@ -38,7 +38,8 @@ def readInt (text):
         return int(num)
 
 def isValidHost (host):
-	validHosts = ['streamcloud', 'nowvideo', 'streamplay', 'streamin', 'streaminto']
+	#validHosts = ['streamcloud', 'nowvideo', 'streamplay', 'streamin', 'streaminto']
+	validHosts = ['streamcloud', 'nowvideo']
 
 	if host.lower() in validHosts:
 		return True

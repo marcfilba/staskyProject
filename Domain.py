@@ -13,6 +13,7 @@ from random import randint
 from threading import Thread
 from time import sleep
 
+import unicodedata
 import exceptions
 import errno
 
@@ -41,9 +42,8 @@ class Domain ():
         return False
 
     def updateExistingSerie (self, serie):
-
         serie.setSeasons ([])
-        serieMainPages = []
+        serieMainPages = serie.getMainPageLinks ()
         for keyName in serie.getKeyNames ():
             if len (serie.getSeasons ()) == 0:
                 sDataTmp = self._ctrlProviders.loadSerie (keyName)
@@ -51,11 +51,16 @@ class Domain ():
                 sTmp.loadSerie (sDataTmp)
                 serie.setSeasons (sTmp.getSeasons ())
 
-            if len (serieMainPages) == 0:
-                serieMainPages = self._ctrlProviders.getMainInfo (keyName)
+                data = self._ctrlProviders.getMainInfo (keyName)
+                for d in data:
+                    found = False
+                    for mp in serieMainPages:
+                        if mp [0] == d [0]:
+                            found = True
+                    if not found:
+                        serieMainPages.append(d)
 
         serie.setMainPageLinks (serieMainPages)
-
         self._ctrlDatabase.storeSerie (serie)
 
     def _updateSerie (self, serieName):
@@ -73,15 +78,20 @@ class Domain ():
         serie.loadSerie (serieData)
 
         if (serieNameOk != serieName.lower ()) or (serieNameOk != serie.getName ().lower ()):
-            serie.addKeyName (serieName.lower ())
+            serie.addKeyName (str(unicodedata.normalize('NFKD', unicode (serieName.lower (), 'utf-8')).encode('ASCII', 'ignore')))
 
-        serieMainPages = []
+        serieMainPages = serie.getMainPageLinks ()
         for keyName in serie.getKeyNames ():
-            if len (serieMainPages) == 0:
-                serieMainPages = self._ctrlProviders.getMainInfo (keyName)
+            data = self._ctrlProviders.getMainInfo (keyName)
+            for d in data:
+                found = False
+                for mp in serieMainPages:
+                    if mp [0] == d [0]:
+                        found = True
+                if not found:
+                    serieMainPages.append(d)
 
         serie.setMainPageLinks (serieMainPages)
-
         self._ctrlDatabase.storeSerie (serie)
 
         return serie
@@ -229,9 +239,9 @@ class Domain ():
             self.log (serieName, seasonNumber, chapterNumber, 'season number doesn\'t exist')
             return -4
 
-    def addToDownloadQueue (self, serieName, seasonNumber, chapterNumber):
+    def addToDownloadQueue (self, serieName, seasonNumber, chapterNumber, retries):
         if not self._ctrlDatabase.inDownloadQueue (serieName.lower (), seasonNumber, chapterNumber):
-            self._ctrlDatabase.addToDownloadQueue (serieName.lower (), seasonNumber, chapterNumber)
+            self._ctrlDatabase.addToDownloadQueue (serieName.lower (), seasonNumber, chapterNumber, retries)
 
     def log (self, serieName, seasonNumber, chapterNumber, dataToLog):
         self._ctrlDatabase.log (serieName, seasonNumber, chapterNumber, dataToLog)
@@ -248,10 +258,15 @@ class Domain ():
 
             self.log (serieName, seasonNumber, chapterNumber, 'resuming')
 
-        if self.downloadChapter (serieName.lower (), seasonNumber, chapterNumber) == 0:
-            self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
+        try:
+            if self.downloadChapter (serieName.lower (), seasonNumber, chapterNumber) == 0:
+                self.downloadedFromDownloadQueue (serieName, seasonNumber, chapterNumber)
+        except Exception as e:
+            #print "Erro downloading chapter " + str (e) + ' ' + serieName + ' ' + str (seasonNumber) + 'x' + str (chapterNumber)
+            pass
         #else:
         #    self._ctrlDatabase.markItemAsPending (serieName, seasonNumber, chapterNumber)
+        print 'die potatoe!'
 
     def getPendingQueue (self):
         return self._ctrlDatabase.getPendingQueue ()
@@ -261,3 +276,6 @@ class Domain ():
 
     def markItemAsNotPending (self, serieName, seasonNumber, chapterNumber):
         self._ctrlDatabase.markItemAsNotPending (serieName, seasonNumber, chapterNumber)
+
+    def maskItemAsPending (self, serieName, seasonNumber, chapterNumber):
+        self._ctrlDatabase.markItemAsPending (serieName, seasonNumber, chapterNumber)

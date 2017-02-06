@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import requests
+import json
+
 from LinksProvider import LinksProvider
 
 from Parser import Parser
@@ -21,33 +23,24 @@ class LinksProviderSeriesAdicto(LinksProvider):
             if serieName == 'house m.d.':
                 serieName = 'house, m.d.'
 
-            url = self._URL + 'buscar/' + serieName.replace(' ', '%20')
+            url = self._URL + 'api/' + serieName.replace (' ', '%20')
             r = requests.get (url, headers={ "user-agent": "Mozilla/5.0" })
 
             if r.status_code != 200:
-                #raise Exception ('  -> error getting serie from SeriesAdicto')
                 return
 
-            _parser = Parser ()
-            data = _parser.feed (r.text)
+            data = json.loads (r.text.replace ('Envia 1', ''))
+            #print 'found ' + self._URL[:-1] + str(data [0]['url'])
+            q.put ((self._name, self._URL[:-1] + str(data [0]['url'])))
 
-            clazz = data.get_by (clazz = 'col-xs-6 col-sm-4 col-md-2')
-            if len (clazz) == 0:
-                #raise Exception ('  -> serie "' + serieName + '" not found in SeriesAdicto')
-                return
-
-            q.put((self._name, self._URL[:-1] + str(clazz[0].get_childs()[0].attrs['href'][0])))
         except Exception as e:
-            print str (e)
             pass
 
     def getChapterUrls (self, serieUrl, seasonNumber, chapterNumber, q):
-        #print '  -> Searching in ' + str (self._name) + '...'
 
-        r = requests.get (serieUrl, headers={ "user-agent": "Mozilla/5.0" })
+        r = requests.get (serieUrl, headers = { "user-agent": "Mozilla/5.0" })
 
         if r.status_code != 200:
-            #raise Exception ('  -> error getting serie from SeriesAdicto')
             return
 
         _parser = Parser ()
